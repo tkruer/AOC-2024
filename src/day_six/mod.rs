@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::fs;
 
 pub mod solution {
@@ -10,77 +11,125 @@ pub mod solution {
         })
     }
 
+    #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+    struct Pos(isize, isize);
+
+    #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+    enum Dir {
+        Up,
+        Right,
+        Down,
+        Left,
+    }
+
+    impl Dir {
+        fn turn_right(self) -> Self {
+            match self {
+                Dir::Up => Dir::Right,
+                Dir::Right => Dir::Down,
+                Dir::Down => Dir::Left,
+                Dir::Left => Dir::Up,
+            }
+        }
+
+        fn offset(self) -> (isize, isize) {
+            match self {
+                Dir::Up => (-1, 0),
+                Dir::Right => (0, 1),
+                Dir::Down => (1, 0),
+                Dir::Left => (0, -1),
+            }
+        }
+    }
+
     pub fn solve() -> (u32, u32) {
         let input = read_file_contents("./input/day_six.txt");
 
-        let mut grid = input
-            .lines()
-            .map(|line| line.as_bytes().to_vec())
-            .collect::<Vec<_>>()
-            .to_owned();
+        let mut grid: Vec<Vec<u8>> = input.lines().map(|line| line.as_bytes().to_vec()).collect();
 
-        let mut start_row = 0;
-        let mut start_col = 0;
-        'outer: for r in 0..grid.len() {
-            for c in 0..grid[0].len() {
-                if grid[r][c] == b'^' {
-                    start_row = r;
-                    start_col = c;
-                    break 'outer;
-                }
-            }
-        }
+        let start_pos = grid
+            .iter()
+            .enumerate()
+            .find_map(|(x, row)| {
+                row.iter()
+                    .position(|&c| c == b'^')
+                    .map(|y| Pos(x as isize, y as isize))
+            })
+            .expect("Start position not found");
 
-        let walk = |return_squares: bool, grid: &Vec<Vec<u8>>| -> Option<Vec<(usize, usize)>> {
-            let mut seen = vec![vec![[false; 4]; grid[0].len()]; grid.len()];
-            let mut row = start_row;
-            let mut col = start_col;
-            let mut dir = 0; // Direction: 0 = up, 1 = right, 2 = down, 3 = left
-
-            loop {
-                if seen[row][col][dir] {
-                    return None;
-                }
-                seen[row][col][dir] = true;
-
-                let (dr, dc) = [(-1, 0), (0, 1), (1, 0), (0, -1)][dir];
-                let next_row = row.wrapping_add(dr as usize);
-                let next_col = col.wrapping_add(dc as usize);
-
-                if !(0..grid.len()).contains(&next_row) || !(0..grid[0].len()).contains(&next_col) {
-                    if return_squares {
-                        let mut visited = Vec::new();
-                        for r in 0..grid.len() {
-                            for c in 0..grid[0].len() {
-                                if seen[r][c].iter().any(|&b| b) {
-                                    visited.push((r, c));
-                                }
-                            }
-                        }
-                        return Some(visited);
-                    }
-                    return Some(Vec::new());
-                }
-
-                if grid[next_row][next_col] == b'#' {
-                    dir = (dir + 1) % 4;
-                } else {
-                    row = next_row;
-                    col = next_col;
-                }
-            }
-        };
-
-        let visited_squares = walk(true, &grid).unwrap();
-
+        let visited = walk(&mut grid, start_pos, Dir::Up);
         let mut critical_count = 0;
-        for &(r, c) in &visited_squares {
-            if walk(false, &grid).is_none() {
+
+        for obstacle in visited.clone() {
+            if creates_loop(&mut grid, start_pos, obstacle) {
                 critical_count += 1;
             }
-            grid[r][c] = b'.';
         }
 
-        (visited_squares.len() as u32, critical_count as u32)
+        (visited.len() as u32, critical_count as u32)
+    }
+
+    fn walk(grid: &mut [Vec<u8>], start: Pos, start_dir: Dir) -> HashSet<Pos> {
+        let mut visited = HashSet::new();
+        let mut pos = start;
+        let mut dir = start_dir;
+
+        loop {
+            visited.insert(pos);
+
+            let (dx, dy) = dir.offset();
+            let next_pos = Pos(pos.0 + dx, pos.1 + dy);
+
+            match grid
+                .get(next_pos.0 as usize)
+                .and_then(|row| row.get(next_pos.1 as usize))
+            {
+                Some(b'#') => {
+                    dir = dir.turn_right();
+                }
+                Some(_) => {
+                    pos = next_pos;
+                }
+                None => break,
+            }
+        }
+
+        visited
+    }
+
+    fn creates_loop(grid: &mut [Vec<u8>], start: Pos, obstacle: Pos) -> bool {
+        let mut visited = HashSet::new();
+        let mut pos = start;
+        let mut dir = Dir::Up;
+
+        grid[obstacle.0 as usize][obstacle.1 as usize] = b'O';
+
+        let mut looping = false;
+        loop {
+            if !visited.insert((pos, dir)) {
+                looping = true;
+                break;
+            }
+
+            let (dx, dy) = dir.offset();
+            let next_pos = Pos(pos.0 + dx, pos.1 + dy);
+
+            match grid
+                .get(next_pos.0 as usize)
+                .and_then(|row| row.get(next_pos.1 as usize))
+            {
+                Some(b'#') | Some(b'O') => {
+                    dir = dir.turn_right();
+                }
+                Some(_) => {
+                    pos = next_pos;
+                }
+                None => break,
+            }
+        }
+
+        grid[obstacle.0 as usize][obstacle.1 as usize] = b'.';
+
+        looping
     }
 }

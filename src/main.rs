@@ -1,6 +1,8 @@
+mod day_eight;
 mod day_five;
 mod day_four;
 mod day_one;
+mod day_seven;
 mod day_six;
 mod day_three;
 mod day_two;
@@ -23,4 +25,10 @@ fn main() {
 
     let (result_p1, result_p2) = day_six::solution::solve();
     println!("Day 6 | Part One: {}, Part Two: {}", result_p1, result_p2);
+
+    let (result_p1, result_p2) = day_seven::solution::solve();
+    println!("Day 7 | Part One: {}, Part Two: {}", result_p1, result_p2);
+    //
+    // let (result_p1, result_p2) = day_eight::solution::solve();
+    // println!("Day 8 | Part One: {}, Part Two: {}", result_p1, result_p2);
 }
