@@ -28,7 +28,7 @@ fn main() {
 
     let (result_p1, result_p2) = day_seven::solution::solve();
     println!("Day 7 | Part One: {}, Part Two: {}", result_p1, result_p2);
-    //
-    // let (result_p1, result_p2) = day_eight::solution::solve();
-    // println!("Day 8 | Part One: {}, Part Two: {}", result_p1, result_p2);
+
+    let (result_p1, result_p2) = day_eight::solution::solve();
+    println!("Day 8 | Part One: {}, Part Two: {}", result_p1, result_p2);
 }
