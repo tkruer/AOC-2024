@@ -1,4 +1,5 @@
 mod day_eight;
+mod day_eleven;
 mod day_five;
 mod day_four;
 mod day_nine;
@@ -39,4 +40,7 @@ fn main() {
 
     let (result_p1, result_p2) = day_ten::solution::solve();
     println!("Day 10 | Part One: {}, Part Two: {}", result_p1, result_p2);
+
+    let (result_p1, result_p2) = day_eleven::solution::solve();
+    println!("Day 11 | Part One: {}, Part Two: {}", result_p1, result_p2);
 }
